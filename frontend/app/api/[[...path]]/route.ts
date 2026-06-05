@@ -14,14 +14,18 @@ function getLambdaClient() {
   return lambdaClient;
 }
 
-const FUNCTION_NAME = process.env.BACKEND_LAMBDA_FUNCTION_NAME || 'bbt-list-BackendFunction-dev';
+const FUNCTION_NAME =
+  process.env.BACKEND_LAMBDA_FUNCTION_NAME || 'bbt-list-BackendFunction-dev';
 
-async function handleRequest(req: NextRequest, { params }: { params: Promise<{ path?: string[] }> }) {
+async function handleRequest(
+  req: NextRequest,
+  { params }: { params: Promise<{ path?: string[] }> },
+) {
   try {
     const resolvedParams = await params;
     const pathParts = resolvedParams.path || [];
     const path = pathParts.join('/');
-    
+
     const { searchParams } = new URL(req.url);
     const queryString = searchParams.toString();
 
@@ -33,11 +37,17 @@ async function handleRequest(req: NextRequest, { params }: { params: Promise<{ p
       try {
         authenticatedUser = await getAuthenticatedUser(req);
         if (!authenticatedUser) {
-          return NextResponse.json({ error: 'Unauthorized: Missing token' }, { status: 401 });
+          return NextResponse.json(
+            { error: 'Unauthorized: Missing token' },
+            { status: 401 },
+          );
         }
       } catch (error) {
         if (isAuthenticationError(error)) {
-          return NextResponse.json({ error: `Unauthorized: ${error.message}` }, { status: 401 });
+          return NextResponse.json(
+            { error: `Unauthorized: ${error.message}` },
+            { status: 401 },
+          );
         }
         throw error;
       }
@@ -62,25 +72,27 @@ async function handleRequest(req: NextRequest, { params }: { params: Promise<{ p
 
     // Construct the API Gateway V2 Proxy Event payload
     const event = {
-      version: "2.0",
-      routeKey: "$default",
+      version: '2.0',
+      routeKey: '$default',
       rawPath: `/api/${path}`,
       rawQueryString: queryString,
       headers: {
-        "content-type": "application/json",
-        "accept": "application/json",
+        'content-type': 'application/json',
+        accept: 'application/json',
       },
       requestContext: {
         http: {
           method: req.method,
           path: `/api/${path}`,
-          protocol: "HTTP/1.1",
-          sourceIp: req.ip || "127.0.0.1",
-          userAgent: req.headers.get("user-agent") || "vercel-route-handler"
-        }
+          protocol: 'HTTP/1.1',
+          sourceIp:
+            req.headers.get('x-forwarded-for')?.split(',')[0].trim() ||
+            '127.0.0.1',
+          userAgent: req.headers.get('user-agent') || 'vercel-route-handler',
+        },
       },
       body: bodyText,
-      isBase64Encoded: false
+      isBase64Encoded: false,
     };
 
     const client = getLambdaClient();
@@ -91,7 +103,10 @@ async function handleRequest(req: NextRequest, { params }: { params: Promise<{ p
 
     const response = await client.send(command);
     if (!response.Payload) {
-      return NextResponse.json({ error: 'Empty response from backend Lambda' }, { status: 500 });
+      return NextResponse.json(
+        { error: 'Empty response from backend Lambda' },
+        { status: 500 },
+      );
     }
 
     const resultText = Buffer.from(response.Payload).toString('utf-8');
@@ -105,16 +120,25 @@ async function handleRequest(req: NextRequest, { params }: { params: Promise<{ p
   } catch (error: any) {
     console.error('Error proxying request to Lambda:', error);
     return NextResponse.json(
-      { error: 'Internal Server Error', details: error.message || String(error) },
-      { status: 500 }
+      {
+        error: 'Internal Server Error',
+        details: error.message || String(error),
+      },
+      { status: 500 },
     );
   }
 }
 
-export async function GET(req: NextRequest, context: { params: Promise<{ path?: string[] }> }) {
+export async function GET(
+  req: NextRequest,
+  context: { params: Promise<{ path?: string[] }> },
+) {
   return handleRequest(req, context);
 }
 
-export async function POST(req: NextRequest, context: { params: Promise<{ path?: string[] }> }) {
+export async function POST(
+  req: NextRequest,
+  context: { params: Promise<{ path?: string[] }> },
+) {
   return handleRequest(req, context);
 }
