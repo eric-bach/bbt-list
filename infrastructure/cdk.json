@@ -1,0 +1,12 @@
+{
+  "app": "uv run python app.py",
+  "requireApproval": "never",
+  "cli-telemetry": false,
+  "notices": false,
+  "context": {
+    "@aws-cdk/aws-apigateway:disableCloudWatchRole": true,
+    "@aws-cdk/core:enablePartitionLiterals": true,
+    "@aws-cdk/aws-dynamodb:resourcePolicyPerReplica": true,
+    "@aws-cdk/aws-s3:publicAccessBlockedByDefault": true
+  }
+}
