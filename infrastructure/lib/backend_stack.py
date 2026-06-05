@@ -33,7 +33,6 @@ class BackendStack(Stack):
             environment={
                 "SHOPS_TABLE": data_stack.shops_table.table_name,
                 "REVIEWS_TABLE": data_stack.reviews_table.table_name,
-                "AWS_REGION": self.region,
             },
             timeout=Duration.seconds(30),
             memory_size=512,
